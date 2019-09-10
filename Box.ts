@@ -11,7 +11,9 @@ export default class Box implements BoxInterface {
     }
     parse(typedArray: TypedArray): boolean {
         this.boxType = this.readString(typedArray);
-        return !this.boxType.match(/[^a-zA-Z0-9]/);
+        // Remove \u0000
+        this.boxType = Array.prototype.filter.call(this.boxType, char => !char.match(/[^a-zA-Z0-9]/)).join("");
+        return !!this.boxType.length;
     }
     protected readString(typedArray: TypedArray, bit: number = 32): string {
         const result = typedArrayToASCII(typedArray.subarray(this._anchor,this._anchor+4));

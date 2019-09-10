@@ -34,3 +34,25 @@ test('BinaryReader parse File Type Box', done => {
     });
     fileReadStream.pipe(reader);
 });
+
+test('BinaryReader parse fragmented chunks', done => {
+    const reader = new BinaryReader();
+    const fileReadStream = fs.createReadStream('../1080p2997p5mbps/event_4kinit.mp4');
+    expect.hasAssertions();
+    reader.on('ftyp', box => {
+        console.log(box);
+        expect(box).toBeInstanceOf(FileTypeBox);
+        const {boxType, majorBrand, compatibleBrands} = box;
+        expect(boxType).toBe("ftyp");
+        expect(majorBrand).toBe("isom");
+        expect(compatibleBrands).toEqual(expect.arrayContaining(["isom", "avc1", "dash"]));
+        done();
+    });
+    fileReadStream.on('readable', () => {
+        console.log("Writing to reader stream...");
+        reader.write(fileReadStream.read(20));
+    });
+    fileReadStream.on('end', () => {
+        reader.end();
+    });
+});

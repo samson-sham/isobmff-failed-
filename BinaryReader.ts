@@ -7,9 +7,11 @@ import Box from './Box';
 export default class StreamReader extends Duplex {
     public totalBytes: number;
     protected _buffer?: TypedArray;
+    public documentTree: any[];
     constructor() {
         super();
         this.totalBytes = 0;
+        this.documentTree = [];
     }
     private __atomize(data: TypedArray, atoms: TypedArray[] = []): [TypedArray[], TypedArray] {
         if (data.byteLength < 4) return [atoms, data];
