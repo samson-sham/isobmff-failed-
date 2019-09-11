@@ -1,21 +1,20 @@
 import { Duplex } from 'stream';
-import { TypedArray, getAtom, concatTypedArray } from './util';
+// import { TypedArray, getAtom, concatTypedArray } from './util';
 import FileTypeBox from './FileTypeBox';
 import Box from './Box';
 
 // import * as Stream from 'stream';
 export default class StreamReader extends Duplex {
     public totalBytes: number;
-    protected _buffer?: TypedArray;
+    protected _buffer?: Buffer;
     public documentTree: any[];
     constructor() {
         super();
         this.totalBytes = 0;
         this.documentTree = [];
     }
-    private __atomize(data: TypedArray, atoms: TypedArray[] = []): [TypedArray[], TypedArray] {
+    private __atomize(data: Buffer, atoms: Buffer[] = []): [Buffer[], Buffer] {
         if (data.byteLength < 4) return [atoms, data];
-        console.log(data.buffer);
         const atomLength: number|bigint = (new DataView(data.buffer, data.byteOffset, 4)).getUint32(0);
         // @TODO: Large size atom
         if (atomLength === 1) {
@@ -29,11 +28,12 @@ export default class StreamReader extends Duplex {
         return this.__atomize(data.subarray(atomLength), atoms);
     }
     // Getting atom through data pipe
-    _getAtoms(typedArray: TypedArray): TypedArray[] {
+    _getAtoms(typedArray: Buffer): Buffer[] {
         let processingBuffer;
         // Check if previous buffer has left
         if (this._buffer) {
-            processingBuffer = concatTypedArray(this._buffer, typedArray);
+            processingBuffer = Buffer.concat([this._buffer, typedArray]);
+            // processingBuffer = concatTypedArray(this._buffer, typedArray);
             this._buffer = void 0;
         } else {
             processingBuffer = typedArray;
@@ -45,7 +45,9 @@ export default class StreamReader extends Duplex {
         return atoms;
     }
     // Input stream
-    _write(chunk: any, encoding: string, callback: (error?: any) => void) {
+    _write(chunk: Buffer, encoding: string, callback: (error?: any) => void) {
+        console.log("[_write]", chunk, chunk.length);
+        this.totalBytes += chunk.length;
         const atoms = this._getAtoms(chunk);
         // Insufficient buffer to parse a single atom
         if (!atoms.length) return callback();
@@ -80,8 +82,7 @@ export default class StreamReader extends Duplex {
                 // Parse EMSG
                 // Parse MOOF
                 // Parse MDAT
-        this.totalBytes += chunk.length;
-        console.log("Writing bytes:", this.totalBytes);
+        console.log("[_write] Writing bytes:", this.totalBytes);
         return callback();
     }
     // Output stream
