@@ -13,3 +13,18 @@ export function typedArrayToASCII(typedArray: Buffer) {
 //     newArray.set(b, a.length);
 //     return newArray;
 // }
+
+class ExtendableError extends Error {
+    constructor(...args: any[]) {
+        super(...args);
+        this.name = this.constructor.name;
+        this.message = `${this.name}: ${args.join(" ")}`;
+        if (typeof Error.captureStackTrace === 'function') {
+            Error.captureStackTrace(this, this.constructor);
+        } else {
+            this.stack = (new Error(...args)).stack;
+        }
+    }
+}
+export class InsufficientDataToParseError extends ExtendableError {}
+export class DataOverflowError extends ExtendableError {}
